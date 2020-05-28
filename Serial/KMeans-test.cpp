@@ -1,9 +1,8 @@
 #include <iostream>
-#include "k-means.h"
+#include "KMeans.h"
 using namespace std;
 
-int main()
-{
+int main() {
     double data[] = {
         0.0, 0.2, 0.4,
         0.3, 0.2, 0.4,
@@ -21,18 +20,17 @@ int main()
     const int dim = 3;   //Dimension of feature
     const int cluster_num = 4; //Cluster number
 
-    KMeans* kmeans = new KMeans(dim,cluster_num);
-    int* labels = new int[size];
+    KMeans *kmeans = new KMeans(dim, cluster_num);
+    int *labels = new int[size];
     kmeans->SetInitMode(KMeans::InitUniform);
-	kmeans->Cluster(data,size,labels);
+    kmeans->Cluster(data, size, labels);
 
-	for(int i = 0; i < size; ++i)
-	{
-	    printf("%f, %f, %f belongs to %d cluster\n", data[i*dim+0], data[i*dim+1], data[i*dim+2], labels[i]);
-	}
+    for (int i = 0; i < size; ++i) {
+        printf("%f, %f, %f belongs to %d cluster\n", data[i * dim + 0], data[i * dim + 1], data[i * dim + 2], labels[i]);
+    }
 
-	delete []labels;
-	delete kmeans;
+    delete[]labels;
+    delete kmeans;
 
     return 0;
 }
