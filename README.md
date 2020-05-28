@@ -1,17 +1,14 @@
-k-means
-===
-C++ implements k-means algorithm
+# 高斯混合模型的 C/C++ 程序设计
 
-Chinese Details: http://www.cnblogs.com/luxiaoxun/archive/2013/05/09/3069594.html
+## C++ 串行
 
-GMM
-===
-C++ implemens GMM (Gaussian mixture model)
+- 作者：[Jerry Lu](https://github.com/luxiaoxun)
+- 中文讲解：[高斯混合模型GMM的C++实现](https://www.cnblogs.com/luxiaoxun/archive/2013/05/10/3071672.html)
 
-Chinese Details:http://www.cnblogs.com/luxiaoxun/archive/2013/05/10/3071672.htm
+## C/C++ MPI 并行
 
-HMM
-===
-C++ implements HMM (Hidden Markov Model) based on k-means and GMM
+- 作者：[べ断桥烟雨ミ](https://github.com/Dragon1573)
 
-Chinese Details:http://www.cnblogs.com/luxiaoxun/archive/2013/05/12/3074510.html
+## C/C++ OpenMP 并行
+
+- 作者：[べ断桥烟雨ミ](https://github.com/Dragon1573)
