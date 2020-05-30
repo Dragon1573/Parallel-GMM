@@ -1,75 +1,75 @@
-#pragma once
+ï»¿#pragma once
 #include <iostream>
 using namespace std;
 
-// ³¬²ÎÊı³õÊ¼»¯Ä£Ê½
+// è¶…å‚æ•°åˆå§‹åŒ–æ¨¡å¼
 enum InitMode {
-    Randomly, // Ëæ»ú³õÊ¼»¯
-    Manually, // Ö¸¶¨Öµ³õÊ¼»¯
-    Uniformly // ¾ùÔÈ³õÊ¼»¯
+    Randomly, // éšæœºåˆå§‹åŒ–
+    Manually, // æŒ‡å®šå€¼åˆå§‹åŒ–
+    Uniformly // å‡åŒ€åˆå§‹åŒ–
 };
 
 /**
- @breif K¾ùÖµËã·¨
+ @breif Kå‡å€¼ç®—æ³•
 
  @date 2003/10/16 Fei Wang
- @date 2013       Jave Lu     £¨°¢·²Â¬£©
- @date 2020/05/25 Jeff Huang  £¨¤Ù¶ÏÇÅÑÌÓê¥ß£©
+ @date 2013       Jave Lu     ï¼ˆé˜¿å‡¡å¢ï¼‰
+ @date 2020/05/25 Jeff Huang  ï¼ˆã¹æ–­æ¡¥çƒŸé›¨ãƒŸï¼‰
  */
 class KMeans {
 public:
     /**
-     * @brief ¹¹Ôìº¯Êı
+     * @brief æ„é€ å‡½æ•°
      *
-     * @param dimensions    Êı¾İÎ¬¶È
-     * @param clusters      ¾ÛÀà´Ø×ÜÊı
+     * @param dimensions    æ•°æ®ç»´åº¦
+     * @param clusters      èšç±»ç°‡æ€»æ•°
      * @return
     */
     KMeans(const int dimensions = 1, const int clusters = 1);
-    // Îö¹¹º¯Êı
+    // ææ„å‡½æ•°
     ~KMeans();
 
     /**
-     * @brief ÉèÖÃ¾ÛÀàÖĞĞÄ×ø±ê
+     * @brief è®¾ç½®èšç±»ä¸­å¿ƒåæ ‡
      *
-     * @param i     Àà±ğ±àºÅ
-     * @param point ×ø±êµã
+     * @param i     ç±»åˆ«ç¼–å·
+     * @param point åæ ‡ç‚¹
     */
     void setMean(const int i, const double *point);
-    // ÉèÖÃ³õÊ¼»¯Ä£Ê½
+    // è®¾ç½®åˆå§‹åŒ–æ¨¡å¼
     void setInitMode(enum InitMode mode);
-    // ÉèÖÃ×î´óµü´ú´ÎÊı
+    // è®¾ç½®æœ€å¤§è¿­ä»£æ¬¡æ•°
     void setMaxIterations(const int iterations);
-    // ÉèÖÃ×î´óÎó²î
+    // è®¾ç½®æœ€å¤§è¯¯å·®
     void setEpsilon(const double epsilon);
-    // »ñÈ¡¾ÛÀàÖĞĞÄ
+    // è·å–èšç±»ä¸­å¿ƒ
     const double *const getMean(const int i);
-    // »ñÈ¡³õÊ¼»¯×´Ì¬
+    // è·å–åˆå§‹åŒ–çŠ¶æ€
     const int getInitMode();
-    // »ñÈ¡×î´óµü´ú´ÎÊı
+    // è·å–æœ€å¤§è¿­ä»£æ¬¡æ•°
     const int getMaxIterations();
-    // »ñÈ¡×î´óÎó²î
+    // è·å–æœ€å¤§è¯¯å·®
     const double getEpsilon();
 
     /**
-     * @brief ¶ÔÄ£ĞÍ½øĞĞ¾ÛÀà
+     * @brief å¯¹æ¨¡å‹è¿›è¡Œèšç±»
      *
-     * @param datasets      Êı¾İ¼¯£¨Ò»Î¬Êı×é£¬ÒÔĞĞÓÅÏÈÄ£Äâ¶şÎ¬¾ØÕó£©
-     * @param dataSize    Êı¾İÁ¿
+     * @param datasets      æ•°æ®é›†ï¼ˆä¸€ç»´æ•°ç»„ï¼Œä»¥è¡Œä¼˜å…ˆæ¨¡æ‹ŸäºŒç»´çŸ©é˜µï¼‰
+     * @param dataSize    æ•°æ®é‡
     */
     const int *fit_transform(const double *const datasets, const int dataSize);
     /**
-     * @brief ´ÓÎÄ¼ş¼ÓÔØÊı¾İ¼¯
+     * @brief ä»æ–‡ä»¶åŠ è½½æ•°æ®é›†
      *
-     * @param  file          Êı¾İ¼¯ÎÄ¼şÁ÷
-     * @param  dimensions    ÌØÕ÷Î¬¶È
-     * @param  size          Êı¾İÁ¿
-     * @return Êı¾İ¼¯¾ØÕó
+     * @param  file          æ•°æ®é›†æ–‡ä»¶æµ
+     * @param  dimensions    ç‰¹å¾ç»´åº¦
+     * @param  size          æ•°æ®é‡
+     * @return æ•°æ®é›†çŸ©é˜µ
     */
     const double *const loadFile(ifstream &file, const int size);
 
     /**
-     * @brief ÎŞ¼à¶½¾ÛÀàÔ¤²â
+     * @brief æ— ç›‘ç£èšç±»é¢„æµ‹
      *
      * @param dataset
      * @param dataSize
@@ -77,39 +77,39 @@ public:
     const int *predict(const double *const dataset, const int dataSize);
 
     /**
-     * @brief Êä³öÄ£ĞÍĞÅÏ¢
+     * @brief è¾“å‡ºæ¨¡å‹ä¿¡æ¯
      *
-     * @param out       Êä³öÁ÷
-     * @param kmeans    K½×ÖĞĞÄ¾à¾ÛÀàÄ£ĞÍ
+     * @param out       è¾“å‡ºæµ
+     * @param kmeans    Ké˜¶ä¸­å¿ƒè·èšç±»æ¨¡å‹
     */
     friend ostream &operator<<(ostream &, const KMeans *const);
 
 private:
-    // Î¬¶ÈÊıÁ¿
+    // ç»´åº¦æ•°é‡
     int dimensions;
-    // ¾ÛÀà´Ø×ÜÊı
+    // èšç±»ç°‡æ€»æ•°
     int clusters;
-    // ¾ÛÀàÖĞĞÄ¾ØÕó
+    // èšç±»ä¸­å¿ƒçŸ©é˜µ
     double **means;
-    // ³¬²ÎÊı³õÊ¼»¯Ä£Ê½
+    // è¶…å‚æ•°åˆå§‹åŒ–æ¨¡å¼
     InitMode initMode;
-    // ×î´óµü´ú´ÎÊı£¨³¬¹ı¼´½áÊø£©
+    // æœ€å¤§è¿­ä»£æ¬¡æ•°ï¼ˆè¶…è¿‡å³ç»“æŸï¼‰
     int maxInterations;
-    // Îó²î¾«¶ÈÏŞ£¨Ğ¡ÓÚ¼´½áÊø£©
+    // è¯¯å·®ç²¾åº¦é™ï¼ˆå°äºå³ç»“æŸï¼‰
     double epsilon;
 
     /**
-     * @brief »ñÈ¡±êÇ©
+     * @brief è·å–æ ‡ç­¾
      *
-     * @param sample    Ñù±¾×ø±êµã
+     * @param sample    æ ·æœ¬åæ ‡ç‚¹
     */
     const double getCost(const double *sample, int &label);
     /**
-     @brief ¼ÆËãÊı¾İµãÖ®¼äµÄÅ·¼¸ÀïµÃ¾àÀë
+     @brief è®¡ç®—æ•°æ®ç‚¹ä¹‹é—´çš„æ¬§å‡ é‡Œå¾—è·ç¦»
 
-     @param x           ×ø±êµãA
-     @param y           ×ø±êµãB
-     @param dimensions  ¿Õ¼äÎ¬¶È
+     @param x           åæ ‡ç‚¹A
+     @param y           åæ ‡ç‚¹B
+     @param dimensions  ç©ºé—´ç»´åº¦
      */
     const double getDistance(const double *, const double *, const int);
 };

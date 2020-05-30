@@ -18,12 +18,21 @@
     <ClInclude Include="KMeans-Serial.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="GMM-Serial.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="KMeans-Serial.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="KMeans-test.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GMM-Serial.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="GMM-test.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
