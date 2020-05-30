@@ -1,3 +1,10 @@
+ï»¿/**
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright @ 2020 Dragon1573
+ */
 #pragma once
 #include "KMeans-Serial.hpp"
 #include <cassert>
@@ -12,34 +19,34 @@ constexpr int DOUBLE = sizeof(double);
 constexpr int INT = sizeof(int);
 
 KMeans::KMeans(const int dimensions, const int clusters) {
-    // Ö¸¶¨Êı¾İ¼¯Î¬¶È
+    // æŒ‡å®šæ•°æ®é›†ç»´åº¦
     this->dimensions = dimensions;
-    // Ö¸¶¨¾ÛÀàÊıÁ¿
+    // æŒ‡å®šèšç±»æ•°é‡
     this->clusters = clusters;
 
-    // ³õÊ¼»¯×ø±êÊı×é£¬Êı×éÃ¿Ò»Ïî¶¼ÊÇÒ»¸ö´æ´¢ÁË¸÷Î¬¶ÈÖµµÄÊı×é
+    // åˆå§‹åŒ–åæ ‡æ•°ç»„ï¼Œæ•°ç»„æ¯ä¸€é¡¹éƒ½æ˜¯ä¸€ä¸ªå­˜å‚¨äº†å„ç»´åº¦å€¼çš„æ•°ç»„
     this->means = new double *[this->clusters];
     for (int i = 0; i < this->clusters; i++) {
-        // ³õÊ¼»¯¾ÛÀàÖĞĞÄ£¬ËùÓĞÀà±ğµÄ¾ÛÀàÖĞĞÄ¶¼Î»ÓÚ³¬¿Õ¼äÔ­µã
+        // åˆå§‹åŒ–èšç±»ä¸­å¿ƒï¼Œæ‰€æœ‰ç±»åˆ«çš„èšç±»ä¸­å¿ƒéƒ½ä½äºè¶…ç©ºé—´åŸç‚¹
         this->means[i] = new double[this->dimensions];
         memset(this->means[i], 0, static_cast<size_t>(this->dimensions) * DOUBLE);
     }
 
-    // Ëæ»ú³õÊ¼»¯¾ØÕó
+    // éšæœºåˆå§‹åŒ–çŸ©é˜µ
     this->initMode = InitMode::Randomly;
-    // ¾ÛÀàÖĞĞÄ×î¶à¸üĞÂ100´Î
+    // èšç±»ä¸­å¿ƒæœ€å¤šæ›´æ–°100æ¬¡
     this->maxInterations = 100;
-    // ÉèÖÃ×î´óÎó²îÎª0.1%
+    // è®¾ç½®æœ€å¤§è¯¯å·®ä¸º0.1%
     this->epsilon = 0.001;
 }
 
 KMeans::~KMeans() {
-    // ÓÉ new ¹Ø¼ü×Ö¿ª±ÙµÄ¶ÑÇø²»»áËæÄ¬ÈÏÎö¹¹¶øÊÍ·Å
+    // ç”± new å…³é”®å­—å¼€è¾Ÿçš„å †åŒºä¸ä¼šéšé»˜è®¤ææ„è€Œé‡Šæ”¾
     for (int i = 0; i < clusters; i++) {
-        // ÏÈÊÍ·ÅÄÚ²ãµÄÊı×é
+        // å…ˆé‡Šæ”¾å†…å±‚çš„æ•°ç»„
         delete[] this->means[i];
     }
-    // ÔÙÊÍ·ÅÍâ²ãµÄÊı×é
+    // å†é‡Šæ”¾å¤–å±‚çš„æ•°ç»„
     delete[] this->means;
 }
 
@@ -78,18 +85,18 @@ const double KMeans::getEpsilon() {
 const int *KMeans::fit_transform(
     const double *const datasets, const int dataSize) {
     switch (this->initMode) {
-    case Randomly: // Ëæ»úÑ¡È¡¸÷Àà±ğµÄ1¸öÑù±¾×÷Îª¾ÛÀàÖĞĞÄ
+    case Randomly: // éšæœºé€‰å–å„ç±»åˆ«çš„1ä¸ªæ ·æœ¬ä½œä¸ºèšç±»ä¸­å¿ƒ
     {
-        // »ñÈ¡ÑµÁ·¼¯Ã¿¸öÀà±ğµÄÑù±¾ÊıÁ¿
+        // è·å–è®­ç»ƒé›†æ¯ä¸ªç±»åˆ«çš„æ ·æœ¬æ•°é‡
         int interval = dataSize / this->clusters;
-        // ÒÔµ±Ç°Ê±¼ä³õÊ¼»¯Î±Ëæ»úÊıÉú³ÉÆ÷
+        // ä»¥å½“å‰æ—¶é—´åˆå§‹åŒ–ä¼ªéšæœºæ•°ç”Ÿæˆå™¨
         srand((unsigned int)time(NULL));
 
         for (int i = 0; i < clusters; i++) {
-            // Ëæ»úÑ¡È¡Ò»¸öÑù±¾µã
+            // éšæœºé€‰å–ä¸€ä¸ªæ ·æœ¬ç‚¹
             int selection = (int)((interval - 1) * (double)rand() / RAND_MAX);
             selection += interval * i;
-            // ÌáÈ¡Êı¾İ²¢
+            // æå–æ•°æ®å¹¶
             for (int j = 0; j < this->dimensions; j++) {
                 this->means[i][j] = datasets[selection * this->dimensions + j];
             }
@@ -97,7 +104,7 @@ const int *KMeans::fit_transform(
 
         break;
     }
-    case Uniformly: // ½«¸÷Àà±ğÊ×¸öÑù±¾×÷Îª¾ÛÀàÖĞĞÄ
+    case Uniformly: // å°†å„ç±»åˆ«é¦–ä¸ªæ ·æœ¬ä½œä¸ºèšç±»ä¸­å¿ƒ
     {
         for (int i = 0; i < this->clusters; i++) {
             int selection = i * dataSize / this->clusters;
@@ -107,8 +114,8 @@ const int *KMeans::fit_transform(
         }
         break;
     }
-    case Manually: // ÓÃ»§×ÔĞĞ³õÊ¼»¯
-        // Ê²Ã´¶¼²»¸É
+    case Manually: // ç”¨æˆ·è‡ªè¡Œåˆå§‹åŒ–
+        // ä»€ä¹ˆéƒ½ä¸å¹²
         break;
     }
 
@@ -118,13 +125,13 @@ const int *KMeans::fit_transform(
 const double *const KMeans::loadFile(
     ifstream &file, const int dataSize
 ) {
-    // Êı¾İÁ¿ÖÁÉÙÒªºÍ¾ÛÀà´ØÊıÏàµ±
+    // æ•°æ®é‡è‡³å°‘è¦å’Œèšç±»ç°‡æ•°ç›¸å½“
     assert(dataSize >= this->clusters);
 
-    // ´´½¨Êı¾İ¼¯
+    // åˆ›å»ºæ•°æ®é›†
     double *dataset = new double[this->dimensions * dataSize];
 
-    // ½âÎöCSVÊı¾İ¼¯£¨ÒÔÖÆ±í·û"\t"×÷ÎªÁĞ·Ö¸ô·û£©
+    // è§£æCSVæ•°æ®é›†ï¼ˆä»¥åˆ¶è¡¨ç¬¦"\t"ä½œä¸ºåˆ—åˆ†éš”ç¬¦ï¼‰
     string line;
     for (int i = 0; i < dataSize; i++) {
         getline(file, line);
@@ -139,22 +146,22 @@ const double *const KMeans::loadFile(
 }
 
 const int *KMeans::predict(const double *const dataset, const int dataSize) {
-    // ±êÇ©¼¯
+    // æ ‡ç­¾é›†
     int *labels = new int[dataSize];
     memset(labels, 0, static_cast<size_t>(dataSize) * INT);
-    // Ä£ĞÍ³É±¾£¨ÉÏÒ»´Î£¬µ±Ç°£©
+    // æ¨¡å‹æˆæœ¬ï¼ˆä¸Šä¸€æ¬¡ï¼Œå½“å‰ï¼‰
     double *costs = new double[2] {0, 0};
-    // Ã¿Ò»ÀàµÄÑù±¾ÊıÁ¿
+    // æ¯ä¸€ç±»çš„æ ·æœ¬æ•°é‡
     int *sampleCounts = new int[this->clusters];
 
-    // µü´ú¾ÛÀà
+    // è¿­ä»£èšç±»
     for (int i = 0; i < this->maxInterations; i++) {
-        // Çå¿Õ¾ÛÀà½á¹û
+        // æ¸…ç©ºèšç±»ç»“æœ
         memset(sampleCounts, 0, static_cast<size_t>(this->clusters) * INT);
 
-        // ĞÂµÄ¾ÛÀàÖĞĞÄ
+        // æ–°çš„èšç±»ä¸­å¿ƒ
         double **nextMeans = new double *[this->clusters];
-        // Çå¿Õ¾ÛÀàÖĞĞÄĞÅÏ¢
+        // æ¸…ç©ºèšç±»ä¸­å¿ƒä¿¡æ¯
         for (int j = 0; j < this->clusters; j++) {
             nextMeans[j] = new double[this->dimensions];
             memset(
@@ -162,35 +169,35 @@ const int *KMeans::predict(const double *const dataset, const int dataSize) {
                 static_cast<size_t>(this->dimensions) * DOUBLE
             );
         }
-        // Ë¢ĞÂ³É±¾
+        // åˆ·æ–°æˆæœ¬
         costs[0] = costs[1];
         costs[1] = 0;
 
-        // ·ÖÀà
+        // åˆ†ç±»
         for (int j = 0; j < dataSize; j++) {
-            // µ±Ç°Ñù±¾
+            // å½“å‰æ ·æœ¬
             double *sample = new double[this->dimensions];
             for (int k = 0; k < this->dimensions; k++) {
                 sample[k] = dataset[j * this->dimensions + k];
             }
 
-            // ¾ÛÀà²¢ÀÛ¼ÆÄ£ĞÍ³É±¾
+            // èšç±»å¹¶ç´¯è®¡æ¨¡å‹æˆæœ¬
             costs[1] += getCost(sample, labels[j]);
-            // ½«µ±Ç°Ñù±¾¹éÊôÖÁÏàÓ¦µÄ¾ÛÀà£¨¼ÆÊıÓÃÓÚºóĞø¼ÆËãÆ½¾ù³É±¾£©
+            // å°†å½“å‰æ ·æœ¬å½’å±è‡³ç›¸åº”çš„èšç±»ï¼ˆè®¡æ•°ç”¨äºåç»­è®¡ç®—å¹³å‡æˆæœ¬ï¼‰
             sampleCounts[labels[j]] += 1;
 
-            // ÀÛ¼Æµ±Ç°¾ÛÀàÖĞËùÓĞÑù±¾µÄ×ø±êĞÅÏ¢£¨ÓÃÓÚºóĞø¼ÆËã¾ÛÀàÖĞĞÄ£©
+            // ç´¯è®¡å½“å‰èšç±»ä¸­æ‰€æœ‰æ ·æœ¬çš„åæ ‡ä¿¡æ¯ï¼ˆç”¨äºåç»­è®¡ç®—èšç±»ä¸­å¿ƒï¼‰
             for (int k = 0; k < this->dimensions; k++) {
                 nextMeans[labels[j]][k] += sample[k];
             }
 
-            // ÊÍ·ÅÊı×é
+            // é‡Šæ”¾æ•°ç»„
             delete[] sample;
         }
 
-        // ¼ÆËãÆ½¾ù³É±¾
+        // è®¡ç®—å¹³å‡æˆæœ¬
         costs[1] /= dataSize;
-        // ¼ÆËã¾ÛÀàÖĞĞÄ
+        // è®¡ç®—èšç±»ä¸­å¿ƒ
         for (int j = 0; j < this->clusters; j++) {
             if (sampleCounts[j] > 0) {
                 for (int k = 0; k < this->dimensions; k++) {
@@ -198,24 +205,24 @@ const int *KMeans::predict(const double *const dataset, const int dataSize) {
                 }
             }
 
-            // ½á¹ûÍ¬²½ºó£¬Ë³±ãÊÍ·Å¿Õ¼ä
+            // ç»“æœåŒæ­¥åï¼Œé¡ºä¾¿é‡Šæ”¾ç©ºé—´
             delete[] nextMeans[j];
         }
 
-        // ÊÍ·Å¶şÎ¬Êı×é
+        // é‡Šæ”¾äºŒç»´æ•°ç»„
         delete nextMeans;
 
-        // Èô³É±¾±ä»¯Ğ¡ÓÚ¾«¶ÈÏŞ£¬ÔòÍ£Ö¹µü´ú
+        // è‹¥æˆæœ¬å˜åŒ–å°äºç²¾åº¦é™ï¼Œåˆ™åœæ­¢è¿­ä»£
         if (fabs(costs[0] - costs[1]) < this->epsilon * costs[0]) {
             break;
         }
     }
 
-    // ÇåÀí¾Ö²¿¶¯Ì¬Êı×é
+    // æ¸…ç†å±€éƒ¨åŠ¨æ€æ•°ç»„
     delete[] sampleCounts;
     delete[] costs;
 
-    // Êä³ö±êÇ©¼¯
+    // è¾“å‡ºæ ‡ç­¾é›†
     return labels;
 }
 
@@ -242,10 +249,10 @@ const double KMeans::getDistance(
 }
 
 ostream &operator<<(ostream &out, const KMeans *const kmeans) {
-    out << "Ä£ĞÍ: K½×ÖĞĞÄ¾à¾ÛÀà" << endl
-        << "Êı¾İÎ¬¶È: " << kmeans->dimensions << endl
-        << "¾ÛÀà´ØÊıÁ¿£º" << kmeans->clusters << endl
-        << "¾ÛÀàÖĞĞÄ£º" << endl;
+    out << "æ¨¡å‹: Ké˜¶ä¸­å¿ƒè·èšç±»" << endl
+        << "æ•°æ®ç»´åº¦: " << kmeans->dimensions << endl
+        << "èšç±»ç°‡æ•°é‡ï¼š" << kmeans->clusters << endl
+        << "èšç±»ä¸­å¿ƒï¼š" << endl;
     for (int i = 0; i < kmeans->clusters; i++) {
         out << "(" << kmeans->means[i][0];
         for (int j = 1; j < kmeans->dimensions; j++) {

@@ -143,9 +143,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="GMM-Serial.hpp" />
     <ClInclude Include="KMeans-Serial.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GMM-Serial.cpp" />
+    <ClCompile Include="GMM-test.cpp" />
     <ClCompile Include="KMeans-Serial.cpp" />
     <ClCompile Include="KMeans-test.cpp" />
   </ItemGroup>
