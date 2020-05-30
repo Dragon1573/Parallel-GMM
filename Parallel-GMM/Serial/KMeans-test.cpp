@@ -1,14 +1,27 @@
+ï»¿/**
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright @ 2020 Dragon1573
+ */
 #include "KMeans-Serial.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 using namespace std;
 
-int main(int argc, const char *argv[]) {
-    // Óï·¨¼ì²é
+/*
+    TIPSï¼šé”™è¯¯çš„ä¸»å‡½æ•°
+
+    æˆ‘æ˜¯æ•…æ„æ‹¼å†™é”™è¯¯çš„ã€‚æœ¬æºæ–‡ä»¶ç”¨äºæµ‹è¯•ï¼Œä½†åº”ç”¨ç¨‹åºåº”åªæœ‰å”¯ä¸€çš„å…¥å£ã€‚
+    GMM-test.cpp åŒæ ·ç”¨äºæµ‹è¯•ï¼Œä¸»è¦çš„æµ‹è¯•é€»è¾‘åœ¨é‚£è¾¹ã€‚
+*/
+int mian(int argc, const char *argv[]) {
+    // è¯­æ³•æ£€æŸ¥
     if (argc < 6) {
-        cerr << "ÓÃ·¨£ºSerial-Version.exe <ÊäÈëÊı¾İ¼¯> <Êä³ö±êÇ©¼¯> "
-            << "<Êı¾İÁ¿> <ÌØÕ÷Î¬¶È> <¾ÛÀà´ØÊı>" << endl;
+        cerr << "ç”¨æ³•ï¼šSerial-Version.exe <è¾“å…¥æ•°æ®é›†> <è¾“å‡ºæ ‡ç­¾é›†> "
+            << "<æ•°æ®é‡> <ç‰¹å¾ç»´åº¦> <èšç±»ç°‡æ•°>" << endl;
         return EXIT_FAILURE;
     }
 
@@ -16,22 +29,22 @@ int main(int argc, const char *argv[]) {
     const int dimensions = atoi(argv[4]);
     const int clusters = atoi(argv[5]);
 
-    // ´´½¨KMeans¾ÛÀàÄ£ĞÍ
+    // åˆ›å»ºKMeansèšç±»æ¨¡å‹
     KMeans *kmeans = new KMeans(dimensions, clusters);
-    kmeans->setInitMode(InitMode::Randomly);
+    kmeans->setInitMode(InitMode::Uniformly);
 
-    // ÔØÈëÊı¾İ¼¯
+    // è½½å…¥æ•°æ®é›†
     ifstream file;
     file.open(argv[1], ios_base::in);
     const double *const dataset = kmeans->loadFile(file, size);
 
-    // ÎŞ¼à¶½¾ÛÀà
+    // æ— ç›‘ç£èšç±»
     const int *const labels = kmeans->fit_transform(dataset, size);
 
-    // ÅĞ¶ÏÎÄ¼şÊä³ö
+    // åˆ¤æ–­æ–‡ä»¶è¾“å‡º
     if (argc >= 3) {
         if (!strcmp(argv[2], "console")) {
-            // Õ¹Ê¾Ä£ĞÍĞÅÏ¢
+            // å±•ç¤ºæ¨¡å‹ä¿¡æ¯
             cout << kmeans << endl;
             for (int i = 0; i < size; i++) {
                 cout << "(" << dataset[i * dimensions];
@@ -54,10 +67,10 @@ int main(int argc, const char *argv[]) {
             results.close();
         }
     } else {
-        cerr << "¾¯¸æ£ºÊä³ö½á¹û±»ºöÂÔ£¡" << endl;
+        cerr << "è­¦å‘Šï¼šè¾“å‡ºç»“æœè¢«å¿½ç•¥ï¼" << endl;
     }
 
-    // ÊÍ·ÅÊı×éÕ¼ÓÃµÄÄÚ´æ
+    // é‡Šæ”¾æ•°ç»„å ç”¨çš„å†…å­˜
     delete[] dataset;
     delete[] labels;
 
