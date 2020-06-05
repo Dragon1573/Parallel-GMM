@@ -33,7 +33,7 @@ KMeans::KMeans(const int dimensions, const int clusters) {
     }
 
     // 随机初始化矩阵
-    this->initMode = InitMode::Randomly;
+    this->initMode = InitMode::Uniformly;
     // 聚类中心最多更新100次
     this->maxInterations = 100;
     // 设置最大误差为0.1%
