@@ -338,5 +338,10 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+# Secret Files
 Essay/
-Datasets/
+*raw.csv
+
+# Executed Results
+*.xml
