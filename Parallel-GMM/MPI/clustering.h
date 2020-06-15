@@ -249,56 +249,24 @@ void gaussian_clustering() {
     double *overallMeans = (double *)calloc(dimensions, sizeof(double));
     memset(overallMeans, 0, dimensions * sizeof(double));
 
-    /* 并行遍历数据集 */
-    int *details = (int *)calloc(3, sizeof(double));
-    MPI_Comm_size(MPI_COMM_WORLD, details);
-    MPI_Comm_rank(MPI_COMM_WORLD, details + 1);
-    int *counts_p = (int *)calloc(clusters, sizeof(int));
-    memset(counts_p, 0, clusters * sizeof(int));
-    double *variances_p = (double *)calloc(clusters * dimensions, sizeof(double));
-    memset(variances_p, 0, clusters * dimensions * sizeof(double));
-    double *overallMeans_p = (double *)calloc(dimensions, sizeof(double));
-    memset(overallMeans_p, 0, dimensions * sizeof(double));
-    double *minVariance_p = (double *)calloc(dimensions, sizeof(double));
-    memset(minVariance_p, 0, dimensions * sizeof(double));
-    details[2] = dataSize / details[0] + (dataSize % details[0] != 0);
-    for (int i = details[1] * details[2];
-        i < min(dataSize, (size_t)details[2] * (details[1] + 1));
-        i++) {
+    /* 遍历数据集 */
+    int i = 0;
+    for (i = 0; i < dataSize; i++) {
         // 将当前样本分配至相应的聚类集合
-        counts_p[labels[i]] += 1;
+        counts[labels[i]] += 1;
 
         for (int j = 0; j < dimensions; j++) {
             // 当前特征的偏离
             const double axes = datasets[i * dimensions + j]
                 - centers[labels[i] * dimensions + j];
             // 累计当前聚类中心各特征的距离
-            variances_p[labels[i] * dimensions + j] += pow(axes, 2);
+            variances[labels[i] * dimensions + j] += pow(axes, 2);
             // 累计总体中心
-            overallMeans_p[j] += datasets[i * dimensions + j];
+            overallMeans[j] += datasets[i * dimensions + j];
             // 累计所有样本各特征的方差
-            minVariance_p[j] += pow(datasets[i * dimensions + j], 2);
+            minVariances[j] += pow(datasets[i * dimensions + j], 2);
         }
     }
-    MPI_Reduce(counts_p, counts, clusters, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-    MPI_Reduce(
-        variances_p, variances, clusters * dimensions, MPI_DOUBLE,
-        MPI_SUM, 0, MPI_COMM_WORLD
-    );
-    MPI_Reduce(
-        overallMeans_p, overallMeans, dimensions, MPI_DOUBLE,
-        MPI_SUM, 0, MPI_COMM_WORLD
-    );
-    MPI_Reduce(
-        minVariance_p, minVariances, dimensions, MPI_DOUBLE,
-        MPI_SUM, 0, MPI_COMM_WORLD
-    );
-    free(minVariance_p);
-    free(overallMeans_p);
-    free(variances_p);
-    free(counts_p);
-    free(details);
-    /* 退出并行状态 */
 
     for (int i = 0; i < dimensions; i++) {
         // 各特征的总体中心
@@ -356,21 +324,10 @@ void gaussian_clustering() {
         costs[0] = costs[1];
         costs[1] = 0;
 
-        /* 并行模型调优 */
-        int *details = (int *)calloc(4, sizeof(int));
-        memset(details, 0, 4 * sizeof(int));
-        MPI_Comm_size(MPI_COMM_WORLD, details);
-        MPI_Comm_rank(MPI_COMM_WORLD, details + 1);
-        details[2] = dataSize / details[0] + (dataSize % details[0] != 0);
-        double *probabilities_p = (double *)calloc(dataSize, sizeof(double));
-        memset(probabilities_p, 0, dataSize * sizeof(double));
-        double *nextPriorities_p = (double *)calloc(clusters, sizeof(double));
-        memset(nextPriorities_p, 0, clusters * sizeof(double));
-        double *nextMeans_p = (double *)calloc(clusters * dimensions, sizeof(double));
-        memset(nextMeans_p, 0, clusters * dimensions * sizeof(double));
-        double *nextVariances_p = (double *)calloc(clusters * dimensions, sizeof(double));
-        memset(nextVariances_p, 0, clusters * dimensions * sizeof(double));
+        /* 模型调优 */
         for (int j = 0; j < dataSize; j++) {
+            // 样本概率
+            probabilities[j] = 0;
             // 遍历分布
             for (int k = 0; k < clusters; k++) {
                 // 样本属于此分布的概率
@@ -383,54 +340,30 @@ void gaussian_clustering() {
                     );
                     probability *= exp(-0.5 * square / variances[k * dimensions + m]);
                 }
-                probabilities_p[j] += priorities[k] * probability;
+                probabilities[j] += priorities[k] * probability;
 
                 /* 它与上面probability有什么区别，我也不知道... */
                 // 样本属于当前高斯分布的概率
                 const double sampleProbability =
-                    probability * priorities[k] / probabilities_p[j];
+                    probability * priorities[k] / probabilities[j];
                 // 累计权重
-                nextPriorities_p[k] += sampleProbability;
+                nextPriorities[k] += sampleProbability;
 
                 // 遍历维度
                 for (int m = 0; m < dimensions; m++) {
                     // 累计均值
-                    nextMeans_p[k * dimensions + m] +=
+                    nextMeans[k * dimensions + m] +=
                         sampleProbability * datasets[j * dimensions + m];
                     // 累计方差
-                    nextVariances_p[k * dimensions + m] +=
+                    nextVariances[k * dimensions + m] +=
                         sampleProbability * pow(datasets[j * dimensions + m], 2);
                 }
             }
 
             /* 1e-20已经小于double参与计算的最小值了。别问，问就是魔法值 */
             // 累计样本引入的成本
-            details[3] += max(log10(probabilities_p[j]), -20);
+            costs[1] += max(log10(probabilities[j]), -20);
         }
-    #pragma warning(disable: 28020)
-        MPI_Reduce(
-            probabilities_p, probabilities, dataSize,
-            MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD
-        );
-        MPI_Reduce(
-            nextPriorities_p, nextPriorities, clusters,
-            MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD
-        );
-        MPI_Reduce(
-            nextMeans_p, nextMeans, clusters * dimensions,
-            MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD
-        );
-        MPI_Reduce(
-            nextVariances_p, nextVariances, clusters * dimensions,
-            MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD
-        );
-        MPI_Reduce(details + 3, costs + 1, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        free(nextVariances_p);
-        free(nextMeans_p);
-        free(nextPriorities_p);
-        free(probabilities_p);
-        free(details);
-        /* 退出并行状态 */
 
         // 计算当前平均成本
         costs[1] /= dataSize;
