@@ -8,8 +8,9 @@
 #pragma once
 #include <assert.h>
 #include <float.h>
-#include <memory.h>
 #include <math.h>
+#include <memory.h>
+#include <omp.h>
 #include <stdio.h>
 #include <stdlib.h>
 
