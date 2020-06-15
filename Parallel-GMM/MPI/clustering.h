@@ -131,21 +131,12 @@ void kMeans_clustering() {
         for (size_t i = interval; i < dataSize; i += interval) {
             MPI_Send(datasets + i * dimensions, interval * dimensions,
                 MPI_DOUBLE, i / interval, 0, MPI_COMM_WORLD);
-
-        #ifdef _DEBUG
-            /* 调试输出 */
-            fprintf(stderr, "[Success] Data Send: [0] -> [%llu]\n", i / interval);
-        #endif
         }
     } else {
         /* 其他进程接收来自进程[0]的数据块 */
         MPI_Recv(localDatasets, interval * dimensions, MPI_DOUBLE,
             0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    #ifdef _DEBUG
-        fprintf(stderr, "[Success] Data Received: [0] -> [%llu]\n", rank);
-    #endif
     }
-
 #pragma endregion
 
     /* 聚类中心初始化 */
@@ -156,7 +147,7 @@ void kMeans_clustering() {
     /* 进程[0]等距初始化聚类中心 */
     if (rank == 0) {
         for (size_t i = 0; i < clusters; i++) {
-            memcpy(clusters + i * dimensions,
+            memcpy(centers + i * dimensions,
                 datasets + i * dataSize / clusters * dimensions,
                 dimensions * sizeof(double));
         }
@@ -177,7 +168,7 @@ void kMeans_clustering() {
             double minDistance = DBL_MAX;
             for (size_t k = 0; k < clusters; k++) {
                 const double temporary =
-                    getDistance(localDatasets + interval * dimensions, k);
+                    getDistance(localDatasets + j * dimensions, k);
                 if (temporary < minDistance) {
                     /* 持续刷新最近距离 */
                     minDistance = temporary;
@@ -211,7 +202,7 @@ void kMeans_clustering() {
                 costs[1] += g_sumDistance[j];
             }
         #ifdef _DEBUG
-            fprintf(stderr, "[INFO] Costs of Iteration [%llu]: %lf\n\n", i, costs[1]);
+            fprintf(stderr, "[INFO] Costs of Iteration %llu: %lf\n\n", i + 1, costs[1]);
         #endif
         }
 
@@ -221,7 +212,7 @@ void kMeans_clustering() {
         /* 当成本不再显著下降，退出迭代 */
         if (fabs(costs[1] - costs[0]) < DBL_EPSILON) {
         #ifdef _DEBUG
-            fprintf(stderr, "[INFO] Iterations Elapsed: %llu\n\n", i);
+            fprintf(stderr, "[INFO] Iterations Elapsed: %llu\n\n", i + 1);
         #endif
             break;
         }
@@ -271,6 +262,66 @@ void kMeans_clustering() {
     free(localDatasets);
     free(g_sumDistance);
 #pragma endregion
+}
+
+/**
+ * @brief 保存聚类结果
+ *
+ * @param fileName  文件名
+*/
+void saveKMeans(const char *const fileName) {
+    FILE *file = fopen(fileName, "wb");
+
+    /* 好了，XML硬核输出开始 */
+    fprintf(file,
+        "<?xml version=\"1.0\" encoding=\"GBK\"?>\n"
+        "<model>\n"
+        "<description>K阶中心距聚类</description>\n"
+        "<clusters>\n"
+        "<count>%lld</count>\n"
+        , clusters);
+    for (int i = 0; i < clusters; i++) {
+        fprintf(file,
+            "<cluster>\n"
+            "<mean>(%lg",
+            centers[i * dimensions]);
+        for (int j = 1; j < dimensions; j++) {
+            fprintf(file, ", %lg", centers[i * dimensions + j]);
+        }
+        fprintf(file,
+            ")</mean>\n"
+            "</cluster>\n"
+        );
+    }
+    fprintf(file,
+        "</clusters>\n"
+        "<dataset>\n"
+        "<shape>(%lld, %lld)</shape>\n"
+        "<samples>\n"
+        , dataSize, dimensions);
+    for (int i = 0; i < dataSize; i++) {
+        fprintf(file,
+            "<sample>\n"
+            "<data>(%lg"
+            , datasets[i * dimensions]);
+        for (int j = 1; j < dimensions; j++) {
+            fprintf(file, ", %lg", datasets[i * dimensions + j]);
+        }
+        fprintf(file,
+            ")</data>\n"
+            "<label>%d</label>\n"
+            "</sample>\n"
+            , labels[i]);
+    }
+    fprintf(file,
+        "</samples>\n"
+        "</dataset>\n"
+        "</model>\n"
+    );
+    /* 上面的Servlet式暴力输出爽吧 */
+
+    fclose(file);
+    printf("[Success] KMeans details saved!\n");
 }
 
 /**
@@ -472,7 +523,7 @@ void gaussian_clustering() {
  *
  * @param fileName  文件名
 */
-void saveFile(const char *const fileName) {
+void saveGaussian(const char *const fileName) {
     FILE *file = fopen(fileName, "wb");
 
     /* 好了，XML硬核输出开始 */
@@ -535,7 +586,7 @@ void saveFile(const char *const fileName) {
     /* 上面的Servlet式暴力输出爽吧 */
 
     fclose(file);
-    printf("[Success] Cluster details saved!\n");
+    printf("[Success] Gaussian details saved!\n");
 }
 
 /**
