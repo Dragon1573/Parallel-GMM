@@ -17,6 +17,11 @@
 // 圆周率
 const double PI = 3.1415926535897932;
 
+// 进程编号
+int rank;
+// 进程总数
+int processors;
+
 // 数据集
 double *datasets;
 // 数据量
@@ -47,6 +52,11 @@ double *probabilities;
 */
 void loadFile(const char *const fileName) {
     FILE *file = fopen(fileName, "r");
+    if (file == NULL) {
+        fprintf(stderr, "[ERROR] Cannot Load the Dataset!\n\n");
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+        exit(EXIT_FAILURE);
+    }
     datasets = (double *)calloc(dimensions * dataSize, sizeof(double));
     for (int i = 0; i < dataSize; i++) {
         for (int j = 0; j < dimensions; j++) {
@@ -56,167 +66,210 @@ void loadFile(const char *const fileName) {
         }
     }
     fclose(file);
+
+#ifdef _DEBUG
+    fprintf(stderr, "[Success] Dataset Loaded!\n\n");
+#endif
 }
 
 /**
- * @brief 欧几里得距离
+ * @brief 计算欧几里得距离
  *
- * @param sampleId  样本编号
- * @param clusterId 聚类编号
+ * @param sample    样本
+ * @param clusterId 类簇编号
 */
-const double getDistance(const size_t sampleId, const size_t clusterId) {
-    // 距离（公有）
-    double distance = 0;
-
-    /* 由于嵌套调用的关系，此处无需进行初始化即可直接使用MPI函数 */
-    int processors = 0, rank = 0;
-    MPI_Comm_size(MPI_COMM_WORLD, &processors);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    /* 并行计算（求和） */
-    double dist_p = 0;
-    const size_t interval = dimensions / processors + (dimensions % processors != 0);
-    for (int i = rank * interval; i < min(dimensions, ((size_t)rank + 1) * interval); i++) {
-        dist_p += pow(
-            datasets[sampleId * dimensions + i]
-            - centers[clusterId * dimensions + i],
-            2
-        );
+double getDistance(const double *const sample, const size_t clusterId) {
+    double sum = 0;
+    for (size_t i = 0; i < dimensions; i++) {
+        sum += pow(sample[i] - centers[clusterId * dimensions + i], 2);
     }
-    MPI_Reduce(&dist_p, &distance, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    /* MPI环境是外层启动的，此处不需要清理 */
-
-    /* 返回距离值 */
-    return sqrt(distance);
-}
-
-/**
- * @brief 统计样本的成本
- *
- * @param sampleId  样本编号
-*/
-const double getCost(const size_t sampleId) {
-    // 初始化样本标签
-    labels[sampleId] = -1;
-    // 最短距离
-    double minimum = DBL_MAX;
-    for (int i = 0; i < clusters; i++) {
-        double temp = getDistance(sampleId, i);
-        if (temp < minimum) {
-            minimum = temp;
-            labels[sampleId] = i;
-        }
-    }
-    return minimum;
+    return sqrt(sum);
 }
 
 /**
  * @brief KMeans聚类算法
 */
 void kMeans_clustering() {
-#pragma region Initialization
-    // 最大迭代次数
-    const int maxInterations = 100;
+    /* 初始化内存空间，由于进程[0]也将参与计算（支持单进程MPI），所以也要为其开辟本地空间 */
+#pragma region Init_Memory
+    // 数据集分块方案
+    const size_t interval = dataSize / processors;
 
-    // 成本最小降幅
-    const int epsilon = 0.001;
-
-    // 聚类中心
-    centers = (double *)calloc(clusters * dimensions, sizeof(double));
-    for (int i = 0; i < clusters; i++) {
-        // 数据集单元格编号
-        const size_t start = i * dataSize * dimensions / clusters;
-        for (int j = 0; j < dimensions; j++) {
-            centers[i * dimensions + j] = datasets[start + j];
-        }
-    }
-
-    // 标签集
+    // 标签集（进程[0]独占）
     labels = (int *)calloc(dataSize, sizeof(int));
-#pragma warning(disable: 6387)
+#pragma warning (disable:6387)
     memset(labels, 0, dataSize * sizeof(int));
-
-    // 模型成本（上次，本次）
+    // 累计距离（进程[0]独占）
+    double *g_sumDistance = (double *)calloc(clusters, sizeof(double));
+    // 训练成本
     double costs[2] = {0, 0};
 
-    // 各簇样本数量
-    int *sampleCounts = (int *)calloc(clusters, sizeof(int));
-    memset(sampleCounts, 0, clusters * sizeof(int));
+    // 数据集（进程间隔离）
+    double *localDatasets = (double *)calloc(interval * dimensions, sizeof(double));
+    memset(localDatasets, 0, interval * dimensions * sizeof(double));
+    // 标签集（进程间隔离）
+    int *localLabels = (double *)calloc(interval, sizeof(int));
+    memset(localLabels, 0, interval * sizeof(int));
+    // 累计距离（进程间隔离）
+    double *sumDistance = (double *)calloc(clusters, sizeof(double));
 #pragma endregion
-#pragma region Estimations
-    /* 迭代优化 */
-    for (int i = 0; i < maxInterations; i++) {
-        // 清空聚类计数器
-        memset(sampleCounts, 0, clusters * sizeof(int));
-        // 聚类中心矩阵
-        double *nextMeans =
-            (double *)calloc(clusters * dimensions, sizeof(double));
-        if (nextMeans == NULL) {
-            fprintf(stderr, "[ERROR] AllocateFailedException: nextMeans\n");
-            exit(EXIT_FAILURE);
+
+    /* TIPS: 通信死锁解决方案
+
+     MPI_Send() 函数是一个同步通信函数，调用此函数后，进程将被挂起，直到有配对进程调用
+     MPI_Recv() 进行接收。由于进程[0]也需要参与计算，存在进程[0]自我收发行为，同步通信将导
+     致进程[0]向自己发送消息后被挂起而无法调用接收函数。所以我们选择从逻辑上避免进程[0]自我
+     收发，将『自我收发』变成一个简单的内存复制，借助 memcpy() 实现『通信』。
+    */
+    /* 数据集划分 */
+#pragma region Data_Delivery
+    if (rank == 0) {
+        /* 进程[0]『自我通信』 */
+        memcpy(localDatasets, datasets, interval * dimensions * sizeof(double));
+
+        /* 进程[0]向其他进程分发数据集 */
+        for (size_t i = interval; i < dataSize; i += interval) {
+            MPI_Send(datasets + i * dimensions, interval * dimensions,
+                MPI_DOUBLE, i / interval, 0, MPI_COMM_WORLD);
+
+        #ifdef _DEBUG
+            /* 调试输出 */
+            fprintf(stderr, "[Success] Data Send: [0] -> [%llu]\n", i / interval);
+        #endif
         }
-        memset(nextMeans, 0, clusters * dimensions * sizeof(double));
+    } else {
+        /* 其他进程接收来自进程[0]的数据块 */
+        MPI_Recv(localDatasets, interval * dimensions, MPI_DOUBLE,
+            0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    #ifdef _DEBUG
+        fprintf(stderr, "[Success] Data Received: [0] -> [%llu]\n", rank);
+    #endif
+    }
 
-        /* 刷新成本*/
-        costs[0] = costs[1];
-        costs[1] = 0;
+#pragma endregion
 
-        int processors = 0, rank = 0;
-        MPI_Comm_size(MPI_COMM_WORLD, &processors);
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        const size_t interval = dataSize / processors + (dataSize % processors != 0);
-        double cost_p = 0,
-            *sampleCounts_p = (double *)calloc(clusters, sizeof(double)),
-            *nextMeans_p = (double *)calloc(clusters, sizeof(double));
-        memset(sampleCounts_p, 0, clusters * sizeof(double));
-        memset(nextMeans_p, 0, clusters * sizeof(double));
-    #pragma warning(disable: 26451)
-        for (int j = rank * interval; j < min(dataSize, interval * (rank + 1)); j++) {
-            // 累计成本
-            cost_p += getCost(j);
-            // 类簇计数器自增
-        #pragma warning(disable: 6011)
-            sampleCounts_p[labels[j]] += 1;
-            // 累计类簇中样本值（用于计算聚类中心）
-            for (int k = 0; k < dimensions; k++) {
-                nextMeans_p[labels[j] * dimensions + k] +=
-                    datasets[j * dimensions + k];
-            }
+    /* 聚类中心初始化 */
+#pragma region Init_Cluster
+    centers = (double *)calloc(clusters * dimensions, sizeof(double));
+    memset(centers, 0, clusters * dimensions * sizeof(double));
+
+    /* 进程[0]等距初始化聚类中心 */
+    if (rank == 0) {
+        for (size_t i = 0; i < clusters; i++) {
+            memcpy(clusters + i * dimensions,
+                datasets + i * dataSize / clusters * dimensions,
+                dimensions * sizeof(double));
         }
-        MPI_Reduce(&cost_p, costs + 1, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        MPI_Reduce(
-            sampleCounts_p, sampleCounts, clusters,
-            MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD
-        );
-        MPI_Reduce(
-            nextMeans_p, nextMeans, clusters, MPI_DOUBLE,
-            MPI_SUM, 0, MPI_COMM_WORLD
-        );
-        free(nextMeans_p);
-        free(sampleCounts_p);
+    }
+#pragma endregion
 
-        // 平均成本
-        costs[1] /= dataSize;
-        // 聚类中心
-        for (int j = 0; j < clusters; j++) {
-            if (sampleCounts[j] > 0) {
-                for (int k = 0; k < dimensions; k++) {
-                    centers[j * dimensions + k] =
-                        nextMeans[j * dimensions + k] / sampleCounts[j];
+    /* 迭代调优 */
+#pragma region Iterations
+    /* 最多迭代100次 */
+    for (size_t i = 0; i < 100; i++) {
+        /* 进程[0]广播聚类中心 */
+        MPI_Bcast(centers, clusters * dimensions, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        /* 并行聚类 */
+        for (size_t j = 0; j < interval; j++) {
+            /* 以最大双精度浮点数进行初始化 */
+            // 最近距离
+            double minDistance = DBL_MAX;
+            for (size_t k = 0; k < clusters; k++) {
+                const double temporary =
+                    getDistance(localDatasets + interval * dimensions, k);
+                if (temporary < minDistance) {
+                    /* 持续刷新最近距离 */
+                    minDistance = temporary;
+                    /* 更新样本所属的标签 */
+                    localLabels[j] = k;
                 }
             }
         }
 
-        // 释放局部数组
-        free(nextMeans);
+        /* 计算本次训练的成本 */
+        memset(sumDistance, 0, clusters * sizeof(double));
+        for (size_t j = 0; j < clusters; j++) {
+            for (size_t k = 0; k < interval; k++) {
+                if (j == localLabels[k]) {
+                    sumDistance[j] = getDistance(localDatasets + k * dimensions, j);
+                }
+            }
+        }
 
-        // 调优条件
-        if (fabs(costs[0] - costs[1]) < epsilon * costs[0]) {
+        /* 进程[0]汇总标签集 */
+        MPI_Gather(localLabels, interval, MPI_INT, labels,
+            interval, MPI_INT, 0, MPI_COMM_WORLD);
+
+        /* 进程[0]计算训练成本 */
+        memset(g_sumDistance, 0, clusters * sizeof(double));
+        MPI_Reduce(sumDistance, g_sumDistance, clusters,
+            MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (rank == 0) {
+            costs[1] = 0;
+            for (size_t j = 0; j < clusters; j++) {
+                costs[1] += g_sumDistance[j];
+            }
+        #ifdef _DEBUG
+            fprintf(stderr, "[INFO] Costs of Iteration [%llu]: %lf\n\n", i, costs[1]);
+        #endif
+        }
+
+        /* 进程[0]广播训练成本 */
+        MPI_Bcast(costs + 1, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+        /* 当成本不再显著下降，退出迭代 */
+        if (fabs(costs[1] - costs[0]) < DBL_EPSILON) {
+        #ifdef _DEBUG
+            fprintf(stderr, "[INFO] Iterations Elapsed: %llu\n\n", i);
+        #endif
             break;
+        }
+
+        /* 刷新成本 */
+        costs[0] = costs[1];
+
+        /* 进程[0]更新聚类中心 */
+        if (rank == 0) {
+            // 聚类中心寄存器
+            double *nextCenters = (double *)calloc(clusters * dimensions, sizeof(double));
+            memset(nextCenters, 0, clusters * dimensions * sizeof(double));
+
+            for (size_t j = 0; j < clusters; j++) {
+                // 聚类中心拥有的样本数量
+                size_t counter = 0;
+
+                for (size_t k = 0; k < dataSize; k++) {
+                    if (j == labels[k]) {
+                        for (size_t m = 0; m < dimensions; m++) {
+                            /* 累计样本坐标 */
+                            nextCenters[j * dimensions + m] +=
+                                datasets[k * dimensions + m];
+                        }
+
+                        /* 累计样本数量 */
+                        ++counter;
+                    }
+                }
+
+                /* 计算聚类中心 */
+                for (size_t k = 0; k < dimensions; k++) {
+                    centers[j * dimensions + k] =
+                        nextCenters[j * dimensions + k] / counter;
+                }
+            }
+
+            free(nextCenters);
         }
     }
 #pragma endregion
+
+    /* 释放内存空间，防止内存泄漏 */
 #pragma region Cleanup
-    free(sampleCounts);
+    free(sumDistance);
+    free(localLabels);
+    free(localDatasets);
+    free(g_sumDistance);
 #pragma endregion
 }
 
@@ -489,11 +542,13 @@ void saveFile(const char *const fileName) {
  * @brief 清理全局范围中开辟的空间
 */
 void cleanUp() {
-    free(datasets);
     free(centers);
     free(labels);
     free(means);
-    free(variances);
-    free(priorities);
-    free(probabilities);
+    if (rank == 0) {
+        free(datasets);
+        free(variances);
+        free(priorities);
+        free(probabilities);
+    }
 }
