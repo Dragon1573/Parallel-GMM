@@ -13,6 +13,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/*
+ * C/C++没有求大值的方法，Microsoft自己在stdio.h中定义了这个玩意儿，所以还是需要
+ * 自己去定义一个宏才行...
+*/
+#ifndef max(a, b)
+// 取2个元素中更大的元素
+#define max(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 /* C/C++没有圆周率常量，这一点很不爽。用反三角的话估计是每次都要算一遍，效率太低了... */
 // 圆周率
 const double PI = 3.1415926535897932;
@@ -212,7 +221,9 @@ void kMeans_clustering() {
         /* 当成本不再显著下降，退出迭代 */
         if (fabs(costs[1] - costs[0]) < DBL_EPSILON) {
         #ifdef _DEBUG
-            fprintf(stderr, "[INFO] Iterations Elapsed: %llu\n\n", i + 1);
+            if (rank == 0) {
+                fprintf(stderr, "[INFO] Iterations Elapsed: %llu\n\n", i + 1);
+            }
         #endif
             break;
         }
@@ -321,7 +332,10 @@ void saveKMeans(const char *const fileName) {
     /* 上面的Servlet式暴力输出爽吧 */
 
     fclose(file);
+
+#ifdef _DEBUG
     printf("[Success] KMeans details saved!\n");
+#endif
 }
 
 /**
@@ -586,7 +600,10 @@ void saveGaussian(const char *const fileName) {
     /* 上面的Servlet式暴力输出爽吧 */
 
     fclose(file);
+
+#ifdef _DEBUG
     printf("[Success] Gaussian details saved!\n");
+#endif
 }
 
 /**
