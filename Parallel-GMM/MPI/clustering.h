@@ -14,8 +14,8 @@
 #include <stdlib.h>
 
 /*
- * C/C++没有求大值的方法，Microsoft自己在stdio.h中定义了这个玩意儿，所以还是需要
- * 自己去定义一个宏才行...
+C/C++没有求大值的方法，只有Microsoft自己在<stdio.h>中定义了这个玩意儿，
+所以需要自己去定义一个宏。使用预处理块防止重复定义
 */
 #ifndef max(a, b)
 // 取2个元素中更大的元素
@@ -62,7 +62,7 @@ double *probabilities;
 void loadFile(const char *const fileName) {
     FILE *file = fopen(fileName, "r");
     if (file == NULL) {
-        fprintf(stderr, "[ERROR] Cannot Load the Dataset!\n\n");
+        fprintf(stderr, "\n[ERROR] Cannot Load the Dataset!\n\n");
         MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
         exit(EXIT_FAILURE);
     }
@@ -77,7 +77,7 @@ void loadFile(const char *const fileName) {
     fclose(file);
 
 #ifdef _DEBUG
-    fprintf(stderr, "[Success] Dataset Loaded!\n\n");
+    fprintf(stderr, "\n[DEBUG] Dataset Loaded!\n\n");
 #endif
 }
 
@@ -211,7 +211,8 @@ void kMeans_clustering() {
                 costs[1] += g_sumDistance[j];
             }
         #ifdef _DEBUG
-            fprintf(stderr, "[INFO] Costs of Iteration %llu: %lf\n\n", i + 1, costs[1]);
+            fprintf(stderr, "[TRACE] Costs of KMeans Iteration %llu: %lf\n",
+                i + 1, costs[1]);
         #endif
         }
 
@@ -222,7 +223,7 @@ void kMeans_clustering() {
         if (fabs(costs[1] - costs[0]) < DBL_EPSILON) {
         #ifdef _DEBUG
             if (rank == 0) {
-                fprintf(stderr, "[INFO] Iterations Elapsed: %llu\n\n", i + 1);
+                fprintf(stderr, "[DEBUG] KMeans Iterations Elapsed: %llu\n\n", i + 1);
             }
         #endif
             break;
@@ -334,7 +335,7 @@ void saveKMeans(const char *const fileName) {
     fclose(file);
 
 #ifdef _DEBUG
-    printf("[Success] KMeans details saved!\n");
+    printf("[DEBUG] KMeans details saved!\n\n");
 #endif
 }
 
@@ -485,6 +486,12 @@ void gaussian_clustering() {
 
         // 计算当前平均成本
         costs[1] /= dataSize;
+    #ifdef _DEBUG
+        if (rank == 0) {
+            fprintf(stderr, "[TRACE] Costs of Gaussian Iteration %llu: %lf\n",
+                i + 1, costs[1]);
+        }
+    #endif
 
         // 优化
         for (int j = 0; j < clusters; j++) {
@@ -517,6 +524,11 @@ void gaussian_clustering() {
 
         /* 停止条件 */
         if (fabs(costs[1] - costs[0]) < epsilon * fabs(costs[1])) {
+        #ifdef _DEBUG
+            if (rank == 0) {
+                fprintf(stderr, "[DEBUG] Gaussian Iteration Elapsed: %llu\n\n", i + 1);
+            }
+        #endif
             break;
         }
     }
@@ -566,8 +578,8 @@ void saveGaussian(const char *const fileName) {
         }
         fprintf(file,
             ")</variance>\n"
-            "<priority>%lg</priority>"
-            "</gaussian>",
+            "<priority>%lg</priority>\n"
+            "</gaussian>\n",
             priorities[i]
         );
     }
@@ -588,7 +600,7 @@ void saveGaussian(const char *const fileName) {
         fprintf(file,
             ")</data>\n"
             "<label>%d</label>\n"
-            "<probability>%lf</probability>"
+            "<probability>%lf</probability>\n"
             "</sample>\n"
             , labels[i], probabilities[i]);
     }
@@ -602,7 +614,7 @@ void saveGaussian(const char *const fileName) {
     fclose(file);
 
 #ifdef _DEBUG
-    printf("[Success] Gaussian details saved!\n");
+    printf("[DEBUG] Gaussian details saved!\n\n");
 #endif
 }
 
