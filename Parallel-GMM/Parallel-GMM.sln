@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Serial", "Serial\Serial.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenMP", "OpenMP\OpenMP.vcxproj", "{D50528CA-D1AA-44FA-8982-D7B4651788AB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MPI", "MPI\MPI.vcxproj", "{6A361224-110F-44F9-949F-05E7DD24CCAA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{D50528CA-D1AA-44FA-8982-D7B4651788AB}.Release|x64.Build.0 = Release|x64
 		{D50528CA-D1AA-44FA-8982-D7B4651788AB}.Release|x86.ActiveCfg = Release|Win32
 		{D50528CA-D1AA-44FA-8982-D7B4651788AB}.Release|x86.Build.0 = Release|Win32
+		{6A361224-110F-44F9-949F-05E7DD24CCAA}.Debug|x64.ActiveCfg = Debug|x64
+		{6A361224-110F-44F9-949F-05E7DD24CCAA}.Debug|x64.Build.0 = Debug|x64
+		{6A361224-110F-44F9-949F-05E7DD24CCAA}.Debug|x86.ActiveCfg = Debug|Win32
+		{6A361224-110F-44F9-949F-05E7DD24CCAA}.Debug|x86.Build.0 = Debug|Win32
+		{6A361224-110F-44F9-949F-05E7DD24CCAA}.Release|x64.ActiveCfg = Release|x64
+		{6A361224-110F-44F9-949F-05E7DD24CCAA}.Release|x64.Build.0 = Release|x64
+		{6A361224-110F-44F9-949F-05E7DD24CCAA}.Release|x86.ActiveCfg = Release|Win32
+		{6A361224-110F-44F9-949F-05E7DD24CCAA}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
