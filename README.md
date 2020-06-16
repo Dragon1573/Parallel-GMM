@@ -13,3 +13,8 @@
 
 - 作者：[べ断桥烟雨ミ](https://github.com/Dragon1573)
 - 项目路径：[Parallel-GMM/OpenMP](Parallel-GMM/OpenMP)
+
+## C/C++ MPI 并行
+
+- 作者：[べ断桥烟雨ミ](https://github.com/Dragon1573)
+- 项目路径：[Parallel-GMM/OpenMP](Parallel-GMM/MPI)
