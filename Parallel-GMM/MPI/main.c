@@ -49,11 +49,11 @@ int main(int argc, const char *argv[]) {
     kMeans_clustering();
 
     if (rank == 0) {
-        /* 输出KMeans结果 */
-        saveKMeans(argv[2]);
-
         /* GMM聚类 */
         gaussian_clustering();
+
+        /* 输出KMeans结果 */
+        saveKMeans(argv[2]);
 
         /* 输出结果 */
         saveGaussian(argv[3]);
